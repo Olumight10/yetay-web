@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f9;
+    }
+    .admin-link a {
+      margin-right: 10px;
+      text-decoration: none;
+      color: #4CAF50;
+      font-weight: bold;
+    }
+    h2 {
+      margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #4CAF50;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-link">
+    <a href="admin-welcome.html" >welcome</a>
+    <a href="admin-dashboard.html" >ongoing</a>
+    <a href="admin-result.html">result</a>
+    <a href="online.html">online</a> <!-- ✅ New link added -->
+  </div>
+  <h2>Admin Dashboard</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Attempt</th>
+        <th>Percentage completion</th>
+      </tr>
+    </thead>
+    <tbody id="resultsTable"></tbody>
+  </table>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyoL5_Wuef_TKE882CTQfLcBeVpyEThOTA_yVQ9IpayeThqDj3DoA9Vy6wpP8CkWDZ5/exec"; // Replace this
+
+    async function loadStats() {
+      const response = await fetch(scriptURL, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: JSON.stringify({ action: "getUserStats" })
+      });
+
+      const data = await response.json();
+      const table = document.getElementById("resultsTable");
+      table.innerHTML = "";
+
+      if (data.status === "success") {
+        data.stats.forEach(stat => {
+          table.innerHTML += `
+            <tr>
+              <td>${stat.user}</td>
+              <td>${stat.attempt}</td>
+              <td>${((stat.attempt)/(stat.all)) * 100}%</td>
+            </tr>
+          `;
+        });
+      } else {
+        table.innerHTML = `<tr><td colspan="4">Error: ${data.message}</td></tr>`;
+      }
+    }
+
+
+    // window.onload = () => {
+    //   loadStats();
+    //   setInterval(loadStats, 15000); // Refresh every 15 seconds
+    // }
+    let intervalId = null;
+
+    function startAutoRefresh() {
+      if (!intervalId) {
+        intervalId = setInterval(loadStats, 15000);
+      }
+    }
+
+    function stopAutoRefresh() {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        loadStats(); // Refresh immediately when tab is back
+        startAutoRefresh();
+      } else {
+        stopAutoRefresh(); // Pause interval when tab is hidden
+      }
+    });
+
+    window.onload = () => {
+      loadStats();     // Initial load
+      startAutoRefresh(); // Start interval
+    };
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gallery - Yetay Bible Competition</title>
+  <link rel="stylesheet" href="yetay.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="header-top">
+      <img src="https://cdn.glitch.global/75a24ea2-773d-456a-8abd-1c76671f333c/yetay_white_logo.png?v=1748084558240" alt="Yetay Logo" class="logo">
+      <nav class="navbar">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="gallery.html">Gallery</a></li>
+          <li><a href="yetay2.html">Yetay 2.0</a></li>
+          <li><a href="remain.html" target="_blank">whatLeft</a></li>
+        </ul>
+      </nav>
+    </div>
+    <h1>Gallery</h1>
+    <p>Memorable Moments from Yetay Events</p>
+  </header>
+
+  
+  
+  <section class="full-gallery">
+    <div id="gallery-container" class="gallery-grid large">
+
+    </div>
+
+    <div class="pagination">
+      <button id="prevBtn">Previous</button>
+      <span id="pageCounter">Page 1 of 1</span>
+      <button id="nextBtn">Next</button>
+    </div>
+  </section>
+  
+<!--   <div class="gallery" id="gallery"></div> -->
+
+
+
+  <footer>
+    <p>&copy; 2025 Yetay. All rights reserved.</p>
+  </footer>
+
+  <script src="yetay.js"></script>
+  <script>
+    window.onload = () => loadGalleryImages(currentPage);
+  </script>
+ 
+</body>
+</html>

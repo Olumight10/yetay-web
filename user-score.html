@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Score</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background: #f4f4f9;
+      color: #333;
+    }
+
+    h2 {
+      color: #4CAF50;
+      margin-bottom: 20px;
+    }
+
+    .kpi-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .kpi {
+      background: white;
+      flex: 1 1 200px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .kpi h3 {
+      margin: 0;
+      color: #666;
+      font-size: 16px;
+    }
+
+    .kpi p {
+      font-size: 28px;
+      font-weight: bold;
+      color: #4CAF50;
+      margin: 10px 0 0;
+    }
+
+    .kpi#username p {
+      font-size: 20px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Quiz Submitted Successfully 🎉</h2>
+
+  <div class="kpi-container">
+    <div class="kpi" id="username">
+      <h3>Username</h3>
+      <p>Loading...</p>
+    </div>
+    <div class="kpi" id="all">
+      <h3>All Questions</h3>
+      <p>Loading...</p>
+    </div>
+    <div class="kpi" id="attempt">
+      <h3>Attempts</h3>
+      <p>Loading...</p>
+    </div>
+    <div class="kpi" id="correct">
+      <h3>Correct Answers</h3>
+      <p>Loading...</p>
+    </div>
+    <div class="kpi" id="score">
+      <h3>Score (%)</h3>
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyoL5_Wuef_TKE882CTQfLcBeVpyEThOTA_yVQ9IpayeThqDj3DoA9Vy6wpP8CkWDZ5/exec";
+
+    async function loadUserScore() {
+      const quizUser = localStorage.getItem("quizUser") || prompt("Enter your username:");
+      if (quizUser) localStorage.setItem("quizUser", quizUser);
+
+      const response = await fetch(scriptURL, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: JSON.stringify({ action: "getUserStats" })
+      });
+
+      const data = await response.json();
+
+      if (data.status === "success") {
+        const userStat = data.stats.find(s => s.user === quizUser);
+        if (userStat) {
+          document.getElementById("username").querySelector("p").textContent = userStat.user;
+          document.getElementById("all").querySelector("p").textContent = userStat.all;
+          document.getElementById("attempt").querySelector("p").textContent = userStat.attempt;
+          document.getElementById("correct").querySelector("p").textContent = userStat.correct;
+          document.getElementById("score").querySelector("p").textContent = userStat.score + "%";
+        } else {
+          alert("User not found in results.");
+        }
+      } else {
+        alert("Error fetching result: " + data.message);
+      }
+    }
+
+    window.onload = loadUserScore;
+  </script>
+
+</body>
+</html>
