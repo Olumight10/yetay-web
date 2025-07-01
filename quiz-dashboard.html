@@ -3,41 +3,18 @@
 <head>
   <title>Quiz</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
       background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
     }
     h2 {
       color: #333;
-    }
-
-    .options label {
-      display: block;
-      margin: 6px 0;
-    }
-    .meta {
-      margin-top: 8px;
-      font-size: 0.85em;
-      color: #555;
-    }
-    .correct {
-      color: green;
-    }
-    .wrong {
-      color: red;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
     }
     input[type="text"] {
       padding: 8px;
@@ -47,16 +24,18 @@
     .question-box {
       padding: 20px;
       background: white;
-      margin-bottom: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
     .options label {
       display: block;
-      margin: 10px 0;
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
     }
-
     button {
       margin: 5px;
       padding: 10px 20px;
@@ -64,188 +43,314 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      background: #4CAF50;
+      background: #213E6D;
       color: white;
       transition: 0.3s;
     }
-
+    button:hover:not(:disabled) {
+      box-shadow: 0 0 10px 2px white;
+      outline: 2px solid white;
+      outline-offset: 2px;
+    }
     button:disabled {
       background: #ccc;
       cursor: not-allowed;
     }
+    #encap {
+      background-color: #A0D8EF;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    #encap h2 {
+      color: #213E6D;
+    }
+    .layer1 {
+      height: 300px;
+    }
+    #quizForm {
+      display: none;
+      height: 100vh;
+      display: flex;
+    }
+    .sidebar {
+      width: 20%;
+      background-color: #A0D8EF;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    .timer {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .username-display {
+      font-size: 1em;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .question-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(30px, 1fr));
+      gap: 6px;
+      justify-items: center;
+    }
+    .question-grid .grid-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: white;
+      cursor: pointer;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .grid-btn.active {
+      background-color: #213E6D;
+      color: white;
+    }
+    .grid-btn.answered {
+      background-color: green;
+      color: white;
+    }
+    .main-content {
+      width: 80%;
+      padding: 30px;
+      box-sizing: border-box;
+      background-color: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    #navigationButtons {
+      display: flex;
+      justify-content: space-between;
+/*       margin-top: 20px; */
+    }
   </style>
 </head>
 <body>
-  <h2>Enter Quiz Username</h2>
-  <form id="userForm">
-    <input type="text" id="quizUser" placeholder="Quiz Username" required>
-    <button type="submit">Load Questions</button>
-  </form>
+  <div id="encap">
+    <div class="layer1">
+      <h2>Enter Quiz Username</h2>
+      <form id="userForm">
+        <input type="text" id="quizUser" placeholder="Quiz Username" required>
+        <button type="submit" id="loadBtn">
+          Load Questions
+        </button>
+      </form>
+    </div>
+  </div>
 
-  <form id="quizForm" style="display:none;">
-    <div id="questionContainer"></div>
-
-    <div id="navigationButtons" style="margin-top: 20px;">
-      <button type="button" id="prevBtn" disabled>Previous</button>
-      <button type="button" id="nextBtn">Next</button>
-      <button type="submit" id="submitBtn" disabled>Submit Quiz</button>
+  <form id="quizForm">
+    <div class="sidebar">
+      <div class="timer" id="quizTimer">Time Left: 15:00</div>
+      <div class="username-display" id="userDisplay"></div>
+      <div class="question-grid" id="questionGrid"></div>
+    </div>
+    <div class="main-content">
+      <div id="questionContainer"></div>
+      <div id="navigationButtons">
+        <button type="button" id="prevBtn">Previous</button>
+        <button type="button" id="nextBtn">Next</button>
+        <button type="submit" id="quizSubmitBtn">Submit Quiz</button>
+      </div>
     </div>
   </form>
 
   <script>
-    async function handleAnswerChange(questionId, picked) {
-      const quizUser = document.getElementById("quizUser").value;
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyoL5_Wuef_TKE882CTQfLcBeVpyEThOTA_yVQ9IpayeThqDj3DoA9Vy6wpP8CkWDZ5/exec";
+    const form = document.getElementById('userForm');
+    const loadBtn = document.getElementById('loadBtn');
+    const encap = document.getElementById('encap');
+    const quizForm = document.getElementById('quizForm');
+    const questionContainer = document.getElementById('questionContainer');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const quizSubmitBtn = document.getElementById('quizSubmitBtn');
+    const userDisplay = document.getElementById('userDisplay');
+    const questionGrid = document.getElementById('questionGrid');
+    const timerDisplay = document.getElementById('quizTimer');
 
-      await fetch(scriptURL, {
+    let loadedQuestions = [];
+    let currentQuestion = 0;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const quizUser = document.getElementById("quizUser").value.trim();
+      if (!quizUser) return alert("Username is required.");
+      localStorage.setItem("quizUser", quizUser);
+
+      loadBtn.disabled = true;
+      loadBtn.textContent = 'Loading...';
+
+      try {
+        const response = await fetch(scriptURL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: JSON.stringify({ action: "getQuestions", username: quizUser })
+        });
+        const result = await response.json();
+        questionContainer.innerHTML = "";
+        if (result.status === "success") {
+          if (result.substatus === "submitted") return window.location.href = "user-score.html";
+
+          loadedQuestions = result.questions;
+          populateGrid(loadedQuestions.length);
+          userDisplay.textContent = `User: ${quizUser}`;
+          loadedQuestions.forEach((q, i) => {
+            const div = document.createElement("div");
+            div.classList.add("question-box");
+            div.id = `question-${i}`;
+            div.style.display = i === 0 ? "block" : "none";
+            div.innerHTML = `
+              <p><strong>Q${i + 1}: ${q.text}</strong></p>
+              <div class="options">
+                ${['A', 'B', 'C', 'D'].map(letter => `
+                  <label>
+                    <input type="radio" name="q${i}" value="${letter}" ${q.picked === letter ? 'checked' : ''}
+                      onchange="handleAnswerChange('${q.id}', '${letter}', ${i})"> ${letter}. ${q.options[letter]}
+                  </label>
+                `).join('')}
+              </div>`;
+            questionContainer.appendChild(div);
+            if (q.picked) markQuestionAnswered(i);
+          });
+          encap.style.display = 'none';
+          quizForm.style.display = 'flex';
+          showCurrentQuestion();
+          startTimer(0.5 * 60);
+        } else {
+          alert("Failed to load questions.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("An error occurred.");
+      } finally {
+        loadBtn.disabled = false;
+        loadBtn.textContent = 'Load Questions';
+      }
+    });
+
+    function handleAnswerChange(id, picked, i) {
+      markQuestionAnswered(i);
+      fetch(scriptURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({
           action: "submitSingleAnswer",
-          username: quizUser,
-          answers: [{ id: questionId, picked }]
+          username: localStorage.getItem("quizUser"),
+          answers: [{ id, picked }]
         })
       });
     }
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyoL5_Wuef_TKE882CTQfLcBeVpyEThOTA_yVQ9IpayeThqDj3DoA9Vy6wpP8CkWDZ5/exec"; // Replace with your deployed Apps Script URL
-    // const scriptURL = "YOUR_GOOGLE_SCRIPT_URL"; // replace with your script URL
-    let loadedQuestions = [];
-    let currentQuestion = 0;
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const submitBtn = document.getElementById("submitBtn");
 
-    document.getElementById("userForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      const quizUser = document.getElementById("quizUser").value;
-      localStorage.setItem("quizUser", quizUser); // ✅ Store for later use
-      
-      
-      const response = await fetch(scriptURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: JSON.stringify({ action: "getQuestions", username: quizUser })
-      });
-
-      const result = await response.json();
-      const container = document.getElementById("questionContainer");
-      container.innerHTML = "";
-      document.getElementById("quizForm").style.display = "none";
-
-      if (result.status === "success") {
-        if (result.substatus === "submitted") {
-          // ✅ User already submitted, redirect to score page
-          console.log("We can do this")
-          window.location.href = "user-score.html";
-          return;
-        }
-        loadedQuestions = result.questions;
-        loadedQuestions.forEach((q, i) => {
-          const div = document.createElement("div");
-          div.classList.add("question-box");
-          div.id = `question-${i}`;
-          div.style.display = i === 0 ? "block" : "none";
-
-          div.innerHTML = `
-            <p><strong>Q${i + 1}: ${q.text}</strong></p>
-            <div class="options">
-              ${['A', 'B', 'C', 'D'].map(letter => `
-                <label>
-                  <input 
-                    type="radio" 
-                    name="q${i}" 
-                    value="${letter}" 
-                    ${q.picked === letter ? 'checked' : ''} 
-                    onchange="handleAnswerChange('${q.id}', '${letter}')"
-                  >
-                  ${letter}. ${q.options[letter]}
-                </label>
-              `).join('')}
-            </div>
-            <div id="feedback-${i}" class="meta"></div>
-          `;
-          container.appendChild(div);
+    function populateGrid(total) {
+      questionGrid.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const div = document.createElement('div');
+        div.className = 'grid-btn';
+        div.textContent = i + 1;
+        div.setAttribute('role', 'button');
+        div.setAttribute('tabindex', '0');
+        div.addEventListener('click', () => {
+          currentQuestion = i;
+          showCurrentQuestion();
         });
-
-        document.getElementById("quizForm").style.display = "block";
-        updateNavButtons();
-      } else {
-        container.innerHTML = `<p style="color:red;">${result.message}</p>`;
+        questionGrid.appendChild(div);
       }
-    });
+    }
 
-    function updateNavButtons() {
-      prevBtn.disabled = currentQuestion === 0;
-      nextBtn.disabled = currentQuestion === loadedQuestions.length - 1;
-      submitBtn.disabled = currentQuestion !== loadedQuestions.length - 1;
+    function markQuestionAnswered(i) {
+      const btn = document.getElementById(`grid-q${i}`) || questionGrid.children[i];
+      if (btn) btn.classList.add('answered');
     }
 
     function showCurrentQuestion() {
       loadedQuestions.forEach((_, i) => {
-        document.getElementById(`question-${i}`).style.display = i === currentQuestion ? "block" : "none";
+        document.getElementById(`question-${i}`).style.display = i === currentQuestion ? 'block' : 'none';
+        const btn = questionGrid.children[i];
+        if (btn) btn.classList.toggle('active', i === currentQuestion);
       });
-      updateNavButtons();
+      prevBtn.disabled = currentQuestion === 0;
+      nextBtn.disabled = currentQuestion === loadedQuestions.length - 1;
+      quizSubmitBtn.disabled = loadedQuestions.length === 0;
     }
 
-    prevBtn.addEventListener("click", () => {
+    prevBtn.addEventListener('click', () => {
       if (currentQuestion > 0) {
         currentQuestion--;
         showCurrentQuestion();
       }
     });
 
-    nextBtn.addEventListener("click", () => {
+    nextBtn.addEventListener('click', () => {
       if (currentQuestion < loadedQuestions.length - 1) {
         currentQuestion++;
         showCurrentQuestion();
       }
     });
 
+    function startTimer(duration) {
+      let timer = duration;
+      const interval = setInterval(() => {
+        const min = Math.floor(timer / 60);
+        const sec = timer % 60;
+        timerDisplay.textContent = `Time Left: ${min}:${sec < 10 ? '0' + sec : sec}`;
+        if (--timer < 0) {
+          clearInterval(interval);
+          alert("⏰ Time is up! Your quiz will now be submitted.");
+          // Submit without confirmation
+          submitQuiz(true);
+        }
+      }, 1000);
+    }
 
-    document.getElementById("quizForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
+  quizForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    submitQuiz(false); // Manual submit
+  });
 
-      const quizUser = document.getElementById("quizUser").value;
-      let score = 0;
-      const pickedAnswers = [];
+  async function submitQuiz(autoSubmit = false) {
+    if (!autoSubmit) {
+      const confirmSubmit = confirm("Are you sure you want to submit your quiz?");
+      if (!confirmSubmit) return;
+    }
 
-      loadedQuestions.forEach((q, i) => {
-        const selected = document.querySelector(`input[name="q${i}"]:checked`);
-        const feedback = document.getElementById(`feedback-${i}`);
+    const quizUser = localStorage.getItem("quizUser");
+    const pickedAnswers = [];
 
-        // if (!selected) return;
-
-        const picked = selected ? selected.value : "";
-        pickedAnswers.push({ id: q.id, picked });
-
-        const isCorrect = picked === q.correctAnswer;
-        if (isCorrect) score++;
-
-        // feedback.innerHTML = `
-        //   <strong class="${isCorrect ? 'correct' : 'wrong'}">
-        //     ${isCorrect ? 'Correct!' : `Wrong. Correct answer is ${q.correctAnswer}`}
-        //   </strong><br>
-        //   <em>Explanation:</em> ${q.explanation || 'N/A'}
-        // `;
-      });
-
-      // Save picked answers to sheet
-      const saveResponse = await fetch(scriptURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: JSON.stringify({
-          action: "submitAnswers",
-          username: quizUser,
-          answers: pickedAnswers
-        })
-      });
-
-      const result = await saveResponse.json();
-      if (result.status === "success") {
-        window.location.href = "user-score.html";
-      } else {
-        alert("There was an error saving your answers.");
-      }
+    loadedQuestions.forEach((q, i) => {
+      const selected = document.querySelector(`input[name="q${i}"]:checked`);
+      pickedAnswers.push({ id: q.id, picked: selected ? selected.value : "" });
     });
+
+    const response = await fetch(scriptURL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: JSON.stringify({
+        action: "submitAnswers",
+        username: quizUser,
+        answers: pickedAnswers
+      })
+    });
+
+    const result = await response.json();
+    if (result.status === "success") {
+      window.location.href = "user-score.html";
+    } else {
+      alert("❌ There was an error saving your answers.");
+    }
+  }
+
   </script>
 </body>
 </html>
